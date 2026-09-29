@@ -1,0 +1,51 @@
+services:
+  backend:
+    build: ./backend
+    container_name: xy-delivery-backend
+    restart: always
+    environment:
+      # 部署后务必修改 SECRET_KEY 和默认密码！
+      SECRET_KEY: "please-change-this-to-a-random-string"
+      ADMIN_USERNAME: "admin"
+      ADMIN_PASSWORD: "admin123"
+      DATABASE_URL: "mysql+aiomysql://xyuser:xypass123@db:3306/xianyu"
+    volumes:
+      - ./backend/data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    networks: [xy]
+
+  frontend:
+    build: ./frontend
+    container_name: xy-delivery-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on: [backend]
+    networks: [xy]
+
+  db:
+    image: mysql:8.0
+    container_name: xy-delivery-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "rootpass123"
+      MYSQL_DATABASE: "xianyu"
+      MYSQL_USER: "xyuser"
+      MYSQL_PASSWORD: "xypass123"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pxypass123"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [xy]
+
+volumes:
+  mysql_data:
+
+networks:
+  xy:
